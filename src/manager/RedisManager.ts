@@ -2,12 +2,22 @@ import { createClient, RedisClientType } from "redis";
 import { Logger } from "../utils/logger.js";
 
 export class RedisManager {
+
+  private static instance: RedisManager;
+
   private publisher: RedisClientType;
   private subscriber: RedisClientType;
 
   constructor(private url: string) {
     this.publisher = createClient({ url });
     this.subscriber = createClient({ url });
+  }
+
+  public static getInstance(url = process.env.REDIS_URL ?? "redis://localhost:6379"): RedisManager {
+    if (!RedisManager.instance) {
+      RedisManager.instance = new RedisManager(url);
+    }
+    return RedisManager.instance;
   }
 
   public async connect(): Promise<void> {
@@ -37,7 +47,7 @@ export class RedisManager {
   }
 
   public async enqueue(queue: string, value: any): Promise<void> {
-    await this.publisher.rPush(queue, JSON.stringify(value));
+    await this.publisher.rPush(queue, value);
   }
 
   public async dequeue<T>(queue: string): Promise<T | null> {
@@ -101,5 +111,9 @@ export class RedisManager {
 
   public async hdel(key: string, fields: string[]) {
     await this.publisher.hDel(key, fields);
-}
+  }
+
+  public async eval(script: string, options: { keys: string[]; arguments: string[];}) {
+    return this.publisher.eval(script, options);
+  }
 }

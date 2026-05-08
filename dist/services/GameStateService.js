@@ -64,7 +64,11 @@ export class GameStateService {
     }
     async removePlayerFromRoom(roomId, playerId) {
         const key = this.getRoomKey(roomId);
-        await this.redis.del(`${key}:${playerId}`);
+        await this.redis.hdel(key, [
+            `${playerId}:x`,
+            `${playerId}:y`,
+            `${playerId}:health`
+        ]);
     }
     async deleteRoom(roomId) {
         await this.redis.del(this.getRoomKey(roomId));

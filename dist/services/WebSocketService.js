@@ -34,12 +34,16 @@ export class WebSocketService {
             await this.nofifyMatchCreated(roomId);
     }
     async nofifyMatchCreated(roomId) {
+        console.log(`Match created: ${roomId}`);
         const players = await this.roomService.listAllPlayers(roomId);
         const payload = JSON.stringify({
             type: "match_start",
             payload: { room: roomId, players },
         });
         for (const pid of players) {
+            console.log("PID:", pid);
+            console.log("CLIENT EXISTS:", this.clients.has(pid));
+            console.log("ALL CLIENTS:", [...this.clients.keys()]);
             const client = this.clients.get(pid);
             if (client && client.socket.readyState === WebSocket.OPEN) {
                 client.socket.send(payload);

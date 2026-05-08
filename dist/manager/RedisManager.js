@@ -6,6 +6,12 @@ export class RedisManager {
         this.publisher = createClient({ url });
         this.subscriber = createClient({ url });
     }
+    static getInstance(url = process.env.REDIS_URL ?? "redis://localhost:6379") {
+        if (!RedisManager.instance) {
+            RedisManager.instance = new RedisManager(url);
+        }
+        return RedisManager.instance;
+    }
     async connect() {
         await this.publisher.connect();
         await this.subscriber.connect();
@@ -25,7 +31,7 @@ export class RedisManager {
         await this.subscriber.unsubscribe(channel);
     }
     async enqueue(queue, value) {
-        await this.publisher.rPush(queue, JSON.stringify(value));
+        await this.publisher.rPush(queue, value);
     }
     async dequeue(queue) {
         const raw = await this.publisher.lPop(queue);
@@ -77,6 +83,12 @@ export class RedisManager {
     }
     async hget(key, field) {
         return this.publisher.hGet(key, field);
+    }
+    async hdel(key, fields) {
+        await this.publisher.hDel(key, fields);
+    }
+    async eval(script, options) {
+        return this.publisher.eval(script, options);
     }
 }
 //# sourceMappingURL=RedisManager.js.map

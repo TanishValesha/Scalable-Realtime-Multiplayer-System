@@ -5,7 +5,7 @@ import { MatchMakingService } from "./services/MatchMakingService.js";
 import { GameStateService } from "./services/GameStateService.js";
 
 (async () => {
-  const redis = new RedisManager(process.env.REDIS_URL ?? "redis://localhost:6379");
+  const redis = RedisManager.getInstance();
   await redis.connect();
 
   const roomService = new RoomService(redis);
