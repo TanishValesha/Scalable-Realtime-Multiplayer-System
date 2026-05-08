@@ -8,9 +8,9 @@ import { GameStateService } from "./services/GameStateService.js";
   const redis = RedisManager.getInstance();
   await redis.connect();
 
-  const roomService = new RoomService(redis);
-  const matchMakingService = new MatchMakingService(redis, roomService);
   const gameStateService = new GameStateService(redis);
+  const roomService = new RoomService(redis, gameStateService);
+  const matchMakingService = new MatchMakingService(redis, roomService);
 
   new WebSocketService(8080, roomService, matchMakingService, gameStateService);
 })();

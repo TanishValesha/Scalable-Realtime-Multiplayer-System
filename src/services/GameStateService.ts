@@ -91,15 +91,15 @@ export class GameStateService {
         roomId: string,
         playerId: string
     ): Promise<void> {
-        const key = this.getRoomKey(roomId);
-           await this.redis.hdel(key, [
+           await this.redis.hdel(roomId, [
         `${playerId}:x`,
         `${playerId}:y`,
         `${playerId}:health`
     ]);
+    
     }
 
     public async deleteRoom(roomId: string): Promise<void> {
-        await this.redis.del(this.getRoomKey(roomId));
+        await this.redis.del(roomId);
     }
 }

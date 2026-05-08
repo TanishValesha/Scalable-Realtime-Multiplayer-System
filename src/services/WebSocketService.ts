@@ -42,7 +42,7 @@ export class WebSocketService {
     }
 
     private async nofifyMatchCreated(roomId: string){
-        console.log(`Match created: ${roomId}`);
+        Logger.info(`Match created: ${roomId}`);
         const players = await this.roomService.listAllPlayers(roomId);
         const payload = JSON.stringify({
             type: "match_start",
@@ -69,7 +69,7 @@ export class WebSocketService {
     }
 
     private async leaveRoom(clientId: string, roomId: string) {
-        await this.roomService.removePlayers(roomId, clientId);
+        await this.roomService.removePlayersAndCleanUp(roomId, clientId);
         Logger.info(`Client ${clientId} left ${roomId}`);
     }
     

@@ -63,15 +63,14 @@ export class GameStateService {
         await this.redis.publish(this.channel(roomId), { playerId, action });
     }
     async removePlayerFromRoom(roomId, playerId) {
-        const key = this.getRoomKey(roomId);
-        await this.redis.hdel(key, [
+        await this.redis.hdel(roomId, [
             `${playerId}:x`,
             `${playerId}:y`,
             `${playerId}:health`
         ]);
     }
     async deleteRoom(roomId) {
-        await this.redis.del(this.getRoomKey(roomId));
+        await this.redis.del(roomId);
     }
 }
 //# sourceMappingURL=GameStateService.js.map

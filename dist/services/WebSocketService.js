@@ -41,9 +41,6 @@ export class WebSocketService {
             payload: { room: roomId, players },
         });
         for (const pid of players) {
-            console.log("PID:", pid);
-            console.log("CLIENT EXISTS:", this.clients.has(pid));
-            console.log("ALL CLIENTS:", [...this.clients.keys()]);
             const client = this.clients.get(pid);
             if (client && client.socket.readyState === WebSocket.OPEN) {
                 client.socket.send(payload);
@@ -59,7 +56,7 @@ export class WebSocketService {
         Logger.info(`Client ${clientId} joined ${roomId}`);
     }
     async leaveRoom(clientId, roomId) {
-        await this.roomService.removePlayers(roomId, clientId);
+        await this.roomService.removePlayersAndCleanUp(roomId, clientId);
         Logger.info(`Client ${clientId} left ${roomId}`);
     }
     async handleMessage(clientId, data) {

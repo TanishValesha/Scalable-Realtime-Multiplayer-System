@@ -1,7 +1,8 @@
 export class RoomService {
-    constructor(redisManager) {
+    constructor(redisManager, gameState) {
         this.roomPrefix = "room";
         this.redis = redisManager;
+        this.gameState = gameState;
     }
     getRoomKey(roomId) {
         return `${this.roomPrefix}:${roomId}:players`;
@@ -23,9 +24,16 @@ export class RoomService {
         const key = this.getRoomKey(roomId);
         await this.redis.sadd(key, player);
     }
-    async removePlayers(roomId, player) {
-        const key = this.getRoomKey(roomId);
-        await this.redis.srem(key, player);
+    async removePlayersAndCleanUp(roomId, player) {
+        const roomKey = this.getRoomKey(roomId);
+        const gameKey = this.gameState.getRoomKey(roomId);
+        await this.redis.srem(roomKey, player);
+        await this.gameState.removePlayerFromRoom(gameKey, player);
+        if (Array.isArray(await this.redis.smembers(roomKey)) && (await this.redis.smembers(roomKey)).length === 0) {
+            await this.deleteRoom(roomId);
+            await this.gameState.unsubscribeFromRoom(gameKey);
+            await this.gameState.deleteRoom(gameKey);
+        }
     }
     async listAllPlayers(roomId) {
         const key = this.getRoomKey(roomId);
