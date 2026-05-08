@@ -8,12 +8,7 @@ export interface PlayerState {
     health: number;
 }
 
-interface RoomState {
-    players: Map<string, PlayerState>;
-}
-
 export class GameStateService {
-    private rooms: Map<string, RoomState> = new Map();
     public redis: RedisManager;
 
     constructor(redis: RedisManager){
@@ -48,12 +43,17 @@ export class GameStateService {
         };
     }
 
-    public subscribeToRoom(roomId: string, listener: (e: any) => void) {
-        this.redis.subscribe(this.channel(roomId), (msg) => {
-            const evt = JSON.parse(msg);
-            listener(evt);
-        });
+   	public async subscribeToRoom(roomId: string, listener: (evt: { playerId: string; action: any }) => void): Promise<void> {
+		await this.redis.subscribe(this.channel(roomId), (msg) => {
+            console.log("[DEBUG] subscriber fired for", roomId, msg);
+			listener(JSON.parse(msg));
+		});
+	
     }
+
+    public async unsubscribeFromRoom(roomId: string): Promise<void> {
+    	await this.redis.unsubscribe(this.channel(roomId));
+	}
     
 
     public async handleAction(roomId: string, playerId: string, action: any) {
@@ -83,35 +83,23 @@ export class GameStateService {
                 await this.redis.hset(key, healthField, newValue.toString());
                 break;
         }
-        await this.redis.publish(this.channel(roomId), JSON.stringify({ playerId, action }));
+        console.log("[DEBUG] publishing to", this.channel(roomId));
+        await this.redis.publish(this.channel(roomId),{ playerId, action });
     }
 
-
-
-    public createRoom(roomId: string, playerIds: string[]) {
-        const players = new Map<string, PlayerState>();
-        playerIds.forEach(id => {
-            players.set(id, { id, x: 0, y: 0, health: 100 });
-        });
-        this.rooms.set(roomId, { players });
+     public async removePlayerFromRoom(
+        roomId: string,
+        playerId: string
+    ): Promise<void> {
+        const key = this.getRoomKey(roomId);
+           await this.redis.hdel(key, [
+        `${playerId}:x`,
+        `${playerId}:y`,
+        `${playerId}:health`
+    ]);
     }
 
-    public getRoomState(roomId: string) {
-        const room = this.rooms.get(roomId);
-        if (!room) return undefined;
-
-        return {
-            players: Array.from(room.players.values())
-        };
-    }
-
-    public removePlayerFromRoom(roomId: string, playerId: string) {
-        const room = this.rooms.get(roomId);
-        if (!room) return;
-
-        room.players.delete(playerId);
-        if (room.players.size === 0) {
-            this.rooms.delete(roomId);
-        }
+    public async deleteRoom(roomId: string): Promise<void> {
+        await this.redis.del(this.getRoomKey(roomId));
     }
 }

@@ -1,6 +1,5 @@
 export class GameStateService {
     constructor(redis) {
-        this.rooms = new Map();
         this.redis = redis;
     }
     getRoomKey(roomId) {
@@ -27,11 +26,14 @@ export class GameStateService {
             health: parseInt(raw[`${playerId}:health`] ?? "100", 10)
         };
     }
-    subscribeToRoom(roomId, listener) {
-        this.redis.subscribe(this.channel(roomId), (msg) => {
-            const evt = JSON.parse(msg);
-            listener(evt);
+    async subscribeToRoom(roomId, listener) {
+        await this.redis.subscribe(this.channel(roomId), (msg) => {
+            console.log("[DEBUG] subscriber fired for", roomId, msg);
+            listener(JSON.parse(msg));
         });
+    }
+    async unsubscribeFromRoom(roomId) {
+        await this.redis.unsubscribe(this.channel(roomId));
     }
     async handleAction(roomId, playerId, action) {
         const key = this.getRoomKey(roomId);
@@ -57,31 +59,15 @@ export class GameStateService {
                 await this.redis.hset(key, healthField, newValue.toString());
                 break;
         }
-        await this.redis.publish(this.channel(roomId), JSON.stringify({ playerId, action }));
+        console.log("[DEBUG] publishing to", this.channel(roomId));
+        await this.redis.publish(this.channel(roomId), { playerId, action });
     }
-    createRoom(roomId, playerIds) {
-        const players = new Map();
-        playerIds.forEach(id => {
-            players.set(id, { id, x: 0, y: 0, health: 100 });
-        });
-        this.rooms.set(roomId, { players });
+    async removePlayerFromRoom(roomId, playerId) {
+        const key = this.getRoomKey(roomId);
+        await this.redis.del(`${key}:${playerId}`);
     }
-    getRoomState(roomId) {
-        const room = this.rooms.get(roomId);
-        if (!room)
-            return undefined;
-        return {
-            players: Array.from(room.players.values())
-        };
-    }
-    removePlayerFromRoom(roomId, playerId) {
-        const room = this.rooms.get(roomId);
-        if (!room)
-            return;
-        room.players.delete(playerId);
-        if (room.players.size === 0) {
-            this.rooms.delete(roomId);
-        }
+    async deleteRoom(roomId) {
+        await this.redis.del(this.getRoomKey(roomId));
     }
 }
 //# sourceMappingURL=GameStateService.js.map

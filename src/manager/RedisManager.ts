@@ -98,4 +98,8 @@ export class RedisManager {
   public async hget(key: string, field: string) {
     return this.publisher.hGet(key, field);
   }
+
+  public async hdel(key: string, fields: string[]) {
+    await this.publisher.hDel(key, fields);
+}
 }

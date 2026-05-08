@@ -45,7 +45,10 @@ export class WebSocketService {
                 client.socket.send(payload);
             }
         }
-        this.gameState.createRoom(roomId, players);
+        await this.gameState.initRoom(roomId, players);
+        await this.gameState.subscribeToRoom(roomId, async () => {
+            await this.broadcastStateUpdate(roomId);
+        });
     }
     async joinRoom(clientId, roomId) {
         await this.roomService.addPlayers(roomId, clientId);
@@ -78,7 +81,6 @@ export class WebSocketService {
                 case "PLAYER_ACTION": {
                     const { room, action } = message.payload;
                     await this.gameState.handleAction(room, clientId, action);
-                    this.broadcastStateUpdate(room);
                     break;
                 }
                 default:
@@ -126,7 +128,7 @@ export class WebSocketService {
                 continue;
             const client = this.clients.get(pid);
             if (client?.socket.readyState === WebSocket.OPEN) {
-                client.socket.send(JSON.stringify({ type: "server", payload: parsed }));
+                client.socket.send(JSON.stringify({ type: "server", payload: parsed.payload }));
             }
         }
         Logger.info(`Broadcast from ${senderId} to ${roomId}`);
