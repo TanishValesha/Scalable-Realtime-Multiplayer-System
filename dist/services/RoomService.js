@@ -24,11 +24,18 @@ export class RoomService {
         const key = this.getRoomKey(roomId);
         await this.redis.sadd(key, player);
     }
+    // public async notifyPlayerLeft(roomId: string, playerId: string): Promise<void> {
+    //     await this.redis.publish(`game:${roomId}:events`, {
+    //         type: "player_left",
+    //         payload: { playerId: playerId }
+    //     });
+    // }
     async removePlayersAndCleanUp(roomId, player) {
         const roomKey = this.getRoomKey(roomId);
         const gameKey = this.gameState.getRoomKey(roomId);
         await this.redis.srem(roomKey, player);
         await this.gameState.removePlayerFromRoom(gameKey, player);
+        // await this.notifyPlayerLeft(roomId, player);
         if (Array.isArray(await this.redis.smembers(roomKey)) && (await this.redis.smembers(roomKey)).length === 0) {
             await this.deleteRoom(roomId);
             await this.gameState.unsubscribeFromRoom(gameKey);

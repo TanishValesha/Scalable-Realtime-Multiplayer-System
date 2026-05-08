@@ -34,7 +34,7 @@ export class WebSocketService {
             await this.nofifyMatchCreated(roomId);
     }
     async nofifyMatchCreated(roomId) {
-        console.log(`Match created: ${roomId}`);
+        Logger.info(`Match created: ${roomId}`);
         const players = await this.roomService.listAllPlayers(roomId);
         const payload = JSON.stringify({
             type: "match_start",

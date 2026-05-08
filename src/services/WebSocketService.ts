@@ -57,7 +57,7 @@ export class WebSocketService {
         }
 
         await this.gameState.initRoom(roomId, players);
-
+        
         await this.gameState.subscribeToRoom(roomId, async () => {
             await this.broadcastStateUpdate(roomId);
         });
