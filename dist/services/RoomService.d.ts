@@ -8,6 +8,7 @@ export declare class RoomService {
     private getRoomKey;
     createRoom(roomId: string, players: string[] | string): Promise<void>;
     deleteRoom(roomId: string): Promise<void>;
+    getRoomLength(roomId: string): Promise<number>;
     addPlayers(roomId: string, player: string[] | string): Promise<void>;
     removePlayersAndCleanUp(roomId: string, player: string): Promise<void>;
     listAllPlayers(roomId: string): Promise<string[]>;

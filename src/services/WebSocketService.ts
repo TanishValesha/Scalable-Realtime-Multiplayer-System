@@ -10,6 +10,7 @@ import { MatchMakingService } from "./MatchMakingService.js";
 export class WebSocketService {
     private wss: WebSocketServer;
     private clients: Map<string, Client> = new Map();
+    private maxPlayersPerRoom = 2;
 
     constructor (private port: number, private roomService: RoomService, private matchmaking: MatchMakingService, private gameState: GameStateService) {
         this.wss = new WebSocketServer({ port });
@@ -64,6 +65,21 @@ export class WebSocketService {
     }
 
     private async joinRoom(clientId: string, roomId: string) {
+        const roomLength = await this.roomService.getRoomLength(roomId);
+        const roomExists = await this.roomService.roomExists(roomId);
+
+        if (!roomExists) {
+            this.clients.get(clientId)?.socket.send(JSON.stringify({type: "error", payload: "Room does not exist"}));
+            Logger.error(`Room ${roomId} does not exist`);
+            return;
+        }
+
+        if (roomLength >= this.maxPlayersPerRoom) {
+            this.clients.get(clientId)?.socket.send(JSON.stringify({type: "error", payload: "Room is full"}));
+            Logger.error(`Room ${roomId} is full`);
+            return;
+        }
+
         await this.roomService.addPlayers(roomId, clientId);
         Logger.info(`Client ${clientId} joined ${roomId}`);
     }
@@ -97,10 +113,17 @@ export class WebSocketService {
                     break;
                 case "PLAYER_ACTION": {                                     
                     const { room, action } = message.payload;
+                    const roomExists = await this.gameState.checkGameRoomExists(room);
+                    if (!roomExists) {
+                        this.clients.get(clientId)?.socket.send(JSON.stringify({type: "error", payload: "Room does not exist"}));
+                        Logger.error(`Room ${room} does not exist`);
+                        return;
+                    }
                     await this.gameState.handleAction(room, clientId, action);
                     break;
                 }
                 default:
+                    this.clients.get(clientId)?.socket.send(JSON.stringify({type: "error", payload: "Unknown message type"}));
                     Logger.error(`Unknown message type from ${clientId}: ${message.type}`);
             }
         } catch (error) {
@@ -145,6 +168,12 @@ export class WebSocketService {
     private async broadcastToRoom(roomId: string, senderId: string, data: string) {
         const members = await this.roomService.listAllPlayers(roomId);
         const parsed: Message = JSON.parse(data);
+
+        if(members.length === 0) {
+            this.clients.get(senderId)?.socket.send(JSON.stringify({type: "error", payload: "Room is empty or does not exist"}));
+            Logger.error(`Room ${roomId} is empty or does not exist`);
+            return;
+        }
 
         for (const pid of members) {
             if (pid === senderId) continue;

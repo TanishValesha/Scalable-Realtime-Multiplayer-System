@@ -20,6 +20,10 @@ export class RoomService {
         const key = this.getRoomKey(roomId);
         await this.redis.del(key);
     }
+    async getRoomLength(roomId) {
+        const key = this.getRoomKey(roomId);
+        return this.redis.smembers(key).then(members => members.length);
+    }
     async addPlayers(roomId, player) {
         const key = this.getRoomKey(roomId);
         await this.redis.sadd(key, player);

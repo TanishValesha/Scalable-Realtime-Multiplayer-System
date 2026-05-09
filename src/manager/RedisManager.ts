@@ -116,4 +116,8 @@ export class RedisManager {
   public async eval(script: string, options: { keys: string[]; arguments: string[];}) {
     return this.publisher.eval(script, options);
   }
+
+  public async scard(key: string): Promise<number> {
+    return this.publisher.sCard(key);
+  }
 }

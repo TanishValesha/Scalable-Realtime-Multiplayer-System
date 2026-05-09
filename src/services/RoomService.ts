@@ -28,6 +28,17 @@ export class RoomService {
         const key = this.getRoomKey(roomId);
         await this.redis.del(key);              
     }
+
+    public async getRoomLength(roomId: string): Promise<number> {
+        const key = this.getRoomKey(roomId);
+        return this.redis.smembers(key).then(members => members.length);
+    }
+
+
+    public async roomExists(roomId: string): Promise<boolean> {
+        const count = await this.redis.scard(`room:${roomId}:players`);
+        return count > 0;
+    }
     
     public async addPlayers(roomId: string, player: string[] | string): Promise<void>{
         const key = this.getRoomKey(roomId);
@@ -57,6 +68,10 @@ export class RoomService {
     }
 
     public async listAllPlayers(roomId: string): Promise<string[]>{
+        const roomExists = await this.roomExists(roomId);
+        if (!roomExists) {
+            return [];
+        }
         const key = this.getRoomKey(roomId);
         return this.redis.smembers(key);
     }

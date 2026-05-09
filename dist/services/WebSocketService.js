@@ -8,6 +8,7 @@ export class WebSocketService {
         this.matchmaking = matchmaking;
         this.gameState = gameState;
         this.clients = new Map();
+        this.maxPlayersPerRoom = 2;
         this.wss = new WebSocketServer({ port });
         this.initialize();
         Logger.info(`WebSocket Server created, listening on port ${port}`);
@@ -52,6 +53,11 @@ export class WebSocketService {
         });
     }
     async joinRoom(clientId, roomId) {
+        const roomLength = await this.roomService.getRoomLength(roomId);
+        if (roomLength >= this.maxPlayersPerRoom) {
+            Logger.error(`Room ${roomId} is full`);
+            return;
+        }
         await this.roomService.addPlayers(roomId, clientId);
         Logger.info(`Client ${clientId} joined ${roomId}`);
     }
@@ -85,6 +91,7 @@ export class WebSocketService {
                     break;
                 }
                 default:
+                    this.clients.get(clientId)?.socket.send(JSON.stringify({ type: "error", payload: "Unknown message type" }));
                     Logger.error(`Unknown message type from ${clientId}: ${message.type}`);
             }
         }

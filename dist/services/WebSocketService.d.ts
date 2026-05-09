@@ -8,6 +8,7 @@ export declare class WebSocketService {
     private gameState;
     private wss;
     private clients;
+    private maxPlayersPerRoom;
     constructor(port: number, roomService: RoomService, matchmaking: MatchMakingService, gameState: GameStateService);
     private initialize;
     private handleAddPlayersToQueue;

@@ -55,6 +55,11 @@ export class GameStateService {
     public async unsubscribeFromRoom(roomId: string): Promise<void> {
     	await this.redis.unsubscribe(this.channel(roomId));
 	}
+
+    public async checkGameRoomExists(roomId: string): Promise<boolean> {
+        const count = await this.redis.scard(`room:${roomId}:players`);
+        return count > 0;
+    }
     
 
     public async handleAction(roomId: string, playerId: string, action: any) {

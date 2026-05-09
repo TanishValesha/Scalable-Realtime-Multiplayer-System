@@ -1,3 +1,4 @@
+import { Logger } from "../utils/logger.js";
 export class GameStateService {
     constructor(redis) {
         this.redis = redis;
@@ -28,7 +29,7 @@ export class GameStateService {
     }
     async subscribeToRoom(roomId, listener) {
         await this.redis.subscribe(this.channel(roomId), (msg) => {
-            console.log("[DEBUG] subscriber fired for", roomId, msg);
+            Logger.info(`[DEBUG] subscriber fired for ${roomId}: ${msg}`);
             listener(JSON.parse(msg));
         });
     }
@@ -59,7 +60,7 @@ export class GameStateService {
                 await this.redis.hset(key, healthField, newValue.toString());
                 break;
         }
-        console.log("[DEBUG] publishing to", this.channel(roomId));
+        Logger.info(`publishing to ${this.channel(roomId)}`);
         await this.redis.publish(this.channel(roomId), { playerId, action });
     }
     async removePlayerFromRoom(roomId, playerId) {
